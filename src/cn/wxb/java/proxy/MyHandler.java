@@ -18,6 +18,9 @@ public class MyHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         System.out.println("--- proxy befor ---");
         Object obj = method.invoke(object, args);
+        if (proxy instanceof IHello){
+            System.out.println(">>>>>>>> proxy is a IHello");
+        }
         System.out.println(">>>>> " + method.getName());
         System.out.println("=== proxy after ===");
         return null;

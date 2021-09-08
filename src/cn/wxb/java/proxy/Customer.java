@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
+//动态代理模式理解
 public class Customer implements ILaw{
     @Override
     public void law() {
