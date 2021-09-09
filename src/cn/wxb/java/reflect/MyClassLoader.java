@@ -15,6 +15,12 @@ package cn.wxb.java.reflect;
  *   b. 如果没有则不是自身去查找而是委托给父加载器进行查找，这样依次的进行递归，直到委托到最顶层的Bootstrap ClassLoader
  *   c. 如果Bootstrap ClassLoader找到了该Class，就会直接返回
  *   d. 如果没找到，则继续依次向下查找，如果还没找到则最后会交由子类去查找
+ *
+ * 3. 双亲委托机制好处
+ *   a. 因为这样可以避免重复加载，当父亲已经加载了该类的时候，就没有必要子ClassLoader再加载一次。
+ *   b. 考虑到安全因素，我们试想一下，如果不使用这种委托模式，那我们就可以随时使用自定义的String来动态替代java核心api中定义类型，
+ *      这样会存在非常大的安全隐患，而双亲委托的方式，就可以避免这种情况，因为String已经在启动时被加载，
+ *      所以用户自定义类是无法加载一个自定义的ClassLoader
  */
 public class MyClassLoader extends ClassLoader{
 
