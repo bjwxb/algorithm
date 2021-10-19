@@ -135,8 +135,22 @@ package cn.wxb.kotlin;
  * 5.实现一个下载功能的接口
  *
  * 1.泛型有什么优点？
+ *      a。对值类型使用非泛型集合类，在把值类型转换为引用类型，和把引用类型转换为值类型时，需要进行装箱和拆箱操作。
+ *          装箱和拆箱的操作很容易实现，但是性能损失较大。假如使用泛型，就可以避免装箱和拆箱操作
+ *      b. 泛型的好处是在编译的时候检查类型安全，并且所有的强制转换都是自动和隐式的，提高代码的重用率
  * 2.动态代理有什么作用？
  * 3.拉圾回收的GCRoot是什么？
+ *      可达性分析算法：通过一系列的名为“GC Root”的对象作为起点，从这些节点向下搜索，
+ *      搜索所走过的路径称为引用链(Reference Chain)，当一个对象到GC Root没有任何引用链相连时，
+ *      则该对象不可达，该对象是不可使用的，垃圾收集器将回收其所占的内存
+ *
+ *      在java语言中，可作为GCRoot的对象包括以下几种：
+ *      a. java虚拟机栈(栈帧中的本地变量表)中的引用的对象。
+ *      b.方法区中的类静态属性引用的对象。
+ *      c.方法区中的常量引用的对象。
+ *      d.本地方法栈中JNI本地方法的引用对象。
+ *
+
  * 4.Handler机制了解吗？一个线程有几个Looper？为什么？
  * 5.你了解协程吗？协程有什么作用？可以完全取代rxjava吗？
  * 6.你们用的什么消息通信机制
@@ -194,6 +208,30 @@ package cn.wxb.kotlin;
  * 5.Activity与AppCompactActivity区别，Activity会打包到包里面去吗？
  * 6.如何让两个线程循环交替打印
  * 7.怎么中止一个线程，Thread.Interupt一定有效吗？
+ *      a。 使用退出标志终止线程,并使用Java关键字volatile，这个关键字的目的是使exit同步，
+ *      也就是说在同一时刻只能由一个线程来修改exit的值.
+ *      public class ThreadSafe extends Thread {
+ *          public volatile boolean exit = false;
+ *               public void run() {
+ *               while (!exit){
+ *                  //do something
+ *              }
+ *          }
+ *      }
+ *
+ *      b. interupt方法中断，分阻塞和非阻塞两种情况
+ *          public class ThreadSafe extends Thread {
+ *              public void run() {
+ *                  while (!isInterrupted()){ //非阻塞过程中通过判断中断标志来退出
+ *                      try{
+ *                            Thread.sleep(5*1000);//阻塞过程捕获中断异常来退出
+ *                      }catch(InterruptedException e){
+ *                           e.printStackTrace();
+ *                           break;//捕获到异常之后，执行break跳出循环。
+ *                       }
+ *                   }
+ *               }
+ *          }
  * 8.动画连续调用的原理是什么？
  * 9.做过一些SDK的操作吗？
  * 10.协程可以在Java项目中使用吗？
@@ -230,11 +268,17 @@ package cn.wxb.kotlin;
  * 9.算法斐波那契台阶
  * 10.手写生产者消息者模型
  * 11.IdleHandler应用场景
+ *      ActivityThread 就向主线程 MessageQueue 添加了一个 GcIdler，用于在主线程空闲时尝试去执行 GC 操作
+ *      我们可以通过向 MessageQueue 添加 IdleHandler 的方式，来实现在 Loop 线程处于空闲状态的时候执行一些优先级不高的任务。
+ *      例如，假设我们有个需求是希望当主线程完成界面绘制等事件后再执行一些 UI 操作，那么就可以通过 IdleHandler 来实现，
+ *      这可以避免拖慢用户看到首屏页面的速度
  *
  * 字节跳动2面
  * 1.自定义圆角图片
  * 2.自定义LinearLayout，怎么测量子View宽高
  * 3.setFactory和setFactory2有什么区别？
+ *      LayoutInflater.Factory2 继承自 LayoutInflater.Factory
+ *      factory2.onCreateView多一个参数parent，可以对创建 View 的 Parent 进行控制
  * 4.插件化换肤方案
  * 5.插件化的原理，startActivity hook了哪个方法
  * 6.手势操作ActionCancel后怎么取消
