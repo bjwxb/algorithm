@@ -42,6 +42,13 @@ package cn.wxb.kotlin;
  * 3.Handler导致的内存泄露原因及其解决方案
  * 4.一个线程可以有几个Handler,几个Looper,几个MessageQueue对象
  * 5.Message对象创建的方式有哪些 & 区别？Message.obtain()怎么维护消息池的？
+ *      new Message 每次创建新对象，堆内存开辟空间，使用完后jvm垃圾回收
+ *      handler.obtainMessage
+ *      Message.obtain  给对象加锁（Object - sPoolSync），保证同一时刻只有一个线程使用Message
+ *                      如果消息池sPool为空则new Message()
+ *                      否则取出头节点Message 重置message，message.next = null, message.flag = 0;
+ *                      sPoolSize--；消息池 最大数为50
+ *      重复的利用message，减少了每次获取Message时去申请空间的时间,减少了gc，提高了效率
  * Handler 有哪些发送消息的方法
  * Handler的post与sendMessage的区别和应用场景
  * handler postDealy后消息队列有什么变化，假设先 postDelay 10s, 再postDelay 1s, 怎么处理这2条消息
@@ -49,6 +56,8 @@ package cn.wxb.kotlin;
  * Handler怎么做到的一个线程对应一个Looper，如何保证只有一个MessageQueue，ThreadLocal在Handler机制中的作用
  * HandlerThread是什么 & 好处 &原理 & 使用场景
  * IdleHandler及其使用场景
+ *       Handler 机制提供的一种，可以在 Looper 事件循环的过程中，当出现空闲的时候，允许我们执行任务的一种机制。
+ *       message=null 或消息延迟执行时，执行idleHandler消息
  * 消息屏障,同步屏障机制
  * 子线程能不能更新UI
  * 为什么Android系统不建议子线程访问UI
@@ -56,18 +65,38 @@ package cn.wxb.kotlin;
  * Handler消息机制中，一个looper是如何区分多个Handler的，当Activity有多个Handler的时候，怎么样区分当前消息由哪个Handler处理，处理message的时候怎么知道是去哪个callback处理的
  * Looper.quit/quitSafely的区别
  * 通过Handler如何实现线程的切换
+ *      主线程创建handler，子线程发送消息 -》 MessageQueue.enqueueMessage(msg.target = this-handler)->Loop.loop 调用handler的回调方法
  * Handler 如何与 Looper 关联的
+ *      不传入looper对象时，默认使用的是创建handler线程的looper（Looper.myLooper() - ThreadLocal存储的 ）
+ *      Handler.mQueue 引用了looper的queue
  * Looper 如何与 Thread 关联的
  * Looper.loop()源码
  * MessageQueue的enqueueMessage()方法如何进行线程同步的
+ *      enqueueMessage 和 next 方法通过synchronized来保证了线程的安全性
  * MessageQueue的next()方法内部原理
+ *      for(;;)遍历msgQueue
+ *      1。msg.target = null 同步屏障消息，此时处理异步消息
+ *      2。取出当前要执行的消息（when字段判断）或者阻塞等待消息执行
+ *      3。msgQueue队列为空，则遍历执行idleHandler消息
  * 子线程中是否可以用MainLooper去创建Handler，Looper和Handler是否一定处于一个线程
  * ANR和Handler的联系
  * 6.View绘制
  * View绘制流程
  * MeasureSpec是什么
+ *      MeasureSpec代表一个32位int值，高2位代表SpecMode(测量模式），低30位代表SepcSize(指在某种测量模式下的规格大小)
+ *      AT_MOST:父容器指定了一个可用大小即SpecSize，View的大小不能大于这个值，具体是什么值要看不同View的具体实现。
+ *      它对应于LayoutParams中的wrap_content
+ *
+ *      EXACTLY：父容器已经检测出View所需要的精确大小，这个时候View的最终大小就是SpecSize所指定的值。
+ *      它对应于LayoutParams中的match_parent和具体的数值这两种模式
+ *
+ *      UNSPECIFIED:父容器不对VIew有任何限制，要多大给多大，这种情况一般用于系统内部，表示一种测量的状态。
+ *
  * 子View创建MeasureSpec创建规则是什么
  * 自定义Viewwrap_content不起作用的原因
+ *      在getDefaultSize（）的默认实现中，当View的测量模式是AT_MOST或EXACTLY时，
+ *      View的大小都会被设置成子View MeasureSpec的specSize。因为AT_MOST对应wrap_content；EXACTLY对应match_parent，
+ *      所以，默认情况下，wrap_content和match_parent是具有相同的效果的
  * 在Activity中获取某个View的宽高有几种方法
  * 为什么onCreate获取不到View的宽高
  * View#post与Handler#post的区别
@@ -215,11 +244,22 @@ package cn.wxb.kotlin;
  * APK的安装流程
  * 22.序列化
  * 什么是序列化
+ *      Java序列化是指把Java对象转换为字节序列的过程，而Java反序列化是指把字节序列恢复为Java对象的过程
+ *      序列化：对象序列化的最主要的用处就是在传递和保存对象的时候，保证对象的完整性和可传递性。
+ *          序列化是把对象转换成有序字节流，以便在网络上传输或者保存在本地文件中。核心作用是对象状态的保存与重建
+ *      反序列化：客户端从文件中或网络上获得序列化后的对象字节流，根据字节流中所保存的对象状态及描述信息，通过反序列化重建对象
  * 为什么需序列化和反序列化要使用
+ *      序列化是指把一个Java对象变成二进制内容，本质上就是一个byte[]数组
+ *      因为序列化后可以把byte[]保存到文件中，或者把byte[]通过网络传输到远程
  * 序列化的有哪些好处
  * Serializable 和 Parcelable 的区别
  * 什么是serialVersionUID
  * 为什么还要显示指定serialVersionUID的值?
+ *      当对同一个实体序列化反序列化时，需要serialVersionUID值一致才能成功。如果我们不显示指定serialVersionUID，
+ *      在序列化时会自动生成一个serialVersionUID。当实体类改动了，反序列化时，会生成一个新serialVersionUID。
+ *      这两个serialVersionUID的值肯定不一致，从而反序列化会失败。但是如果显示指定，就不会生成新serialVersionUID值了。
+ *      反序列化的serialVersionUID就是原序列化的serialVersionUID
+ *
  * 23.Art & Dalvik 及其区别
  * Art & Dalvik 及其区别
  * 24.模块化&组件化
