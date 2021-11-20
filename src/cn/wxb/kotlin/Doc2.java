@@ -40,6 +40,26 @@ package cn.wxb.kotlin;
  * 子线程中能不能直接new一个Handler,为什么主线程可以
  * 主线程的Looper第一次调用loop方法,什么时候,哪个类
  * 3.Handler导致的内存泄露原因及其解决方案
+ *      原因：非静态内部类，或者匿名内部类。使得Handler默认持有外部类的引用。
+ *      在Activity销毁时，由于Handler可能有未执行完/正在执行的Message，
+ *      导致Handler持有Activity的引用。进而导致GC无法回收Activity
+ *
+ *      解决方法：a。Activity销毁时，清空Handler中，未执行或正在执行的Callback以及Message
+ *              b. 静态内部类+弱引用
+ *                  private static class AppHandler extends Handler {
+ *                      //弱引用，在垃圾回收时，被回收
+ *                      WeakReference<Activity> activity;
+ *
+ *                      AppHandler(Activity activity){
+ *                          this.activity=new WeakReference<Activity>(activity);
+ *                      }
+ *
+ *                       public void handleMessage(Message message){
+ *                           switch (message.what){
+ *                              //todo
+ *                          }
+ *                       }
+ *                  }
  * 4.一个线程可以有几个Handler,几个Looper,几个MessageQueue对象
  * 5.Message对象创建的方式有哪些 & 区别？Message.obtain()怎么维护消息池的？
  *      new Message 每次创建新对象，堆内存开辟空间，使用完后jvm垃圾回收
@@ -50,11 +70,19 @@ package cn.wxb.kotlin;
  *                      sPoolSize--；消息池 最大数为50
  *      重复的利用message，减少了每次获取Message时去申请空间的时间,减少了gc，提高了效率
  * Handler 有哪些发送消息的方法
+ *    handler常用场景- 异步更新ui/延时任务处理
  * Handler的post与sendMessage的区别和应用场景
+ *      两者无区别post会吧runnable封装成message(赋值给callBack属性)然后调用sendMessageDelayed方法
+ *      sendMessage 也是调用sendMessageDelayed
+ *      消息处理区别：
+ *      区别就是调用post方法的消息是在post传递的Runnable对象的run方法中处理，
+ *      而调用sendMessage方法需要重写handleMessage方法或者给handler设置callback
+ *      ，在callback的handleMessage中处理并返回true
  * handler postDealy后消息队列有什么变化，假设先 postDelay 10s, 再postDelay 1s, 怎么处理这2条消息
  * MessageQueue是什么数据结构
  * Handler怎么做到的一个线程对应一个Looper，如何保证只有一个MessageQueue，ThreadLocal在Handler机制中的作用
  * HandlerThread是什么 & 好处 &原理 & 使用场景
+ *      handlerThread是一个封装了looper的thread，可以通过消息重复使用当前线程
  * IdleHandler及其使用场景
  *       Handler 机制提供的一种，可以在 Looper 事件循环的过程中，当出现空闲的时候，允许我们执行任务的一种机制。
  *       message=null 或消息延迟执行时，执行idleHandler消息

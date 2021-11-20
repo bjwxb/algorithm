@@ -9,6 +9,8 @@ public class Three {
     public static void main(String[] args) {
         String str = "abcdabcera";
         System.out.println(test((str)));
+        int a = 7;
+        System.out.println(a & 1);//num & 1 == 1是奇数 否则是偶数。
     }
 
     private static int test(String str){

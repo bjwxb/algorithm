@@ -3,11 +3,21 @@ package cn.wxb.kotlin;
 /**
  * 1.java有什么特性，继承有什么用处，多态有什么用处
  * 2.反射是什么，在哪里用到，怎么利用反射创建一个对象
+ *      反射可以实现在 运行时 可以知道 任意一个类 的属性和方法
+ *      T.class/t.getClass()/Class.forName("com.wx.T")
  * 3.代理模式与装饰模式的区别，手写一个静态代理，一个动态代理
  * 4.对象加载的过程，属性先加载还是方法先加载
+ *      父类静态成员变量/静态方法块-》子类静态成员变量/静态方法块 -》 父类普通成员变量 -》 父类构造方法
+ *      -》子类普通成员变量 -》 子类构造方法
  * 5.垃圾回收机制与jvm结构
  * 6.自定义View,事件分发机制讲一讲
  * 7.http与https有什么区别
+ *      http是超文本传输协议，信息是明文传输；https则是具有安全性传输协议的ssl/tls加密传输协议
+ *      http/https连接方式不同，http端口8080，https端口443
+ *      http的连接很简单，是无状态的；HTTPS协议是由SSL/TLS+HTTP协议构建的可进行加密传输、身份认证的网络协议，比http协议安全。
+ *      https需要CA证书
+ *      https优点可以防止数据在传输过程中不被盗窃/篡改/完整性
+ *      https缺点 握手阶段比较费时/证书需要花钱/缓存不如http高效
  * 8.Activity启动模式，以及各启动模式生命周期问题
  * 9.静态方法，静态对象为什么不能继承
  * 10.Activity怎么启动Service，Activity与Service交互，Service与Thread的区别
@@ -58,14 +68,27 @@ package cn.wxb.kotlin;
  * 5.ARouter怎么实现接口调用
  * 6.ARouter怎么实现页面拦截
  * 7.MVP怎么处理内存泄漏
+ *      内存泄漏通常是P在执行耗时任务时，未完成就退出了activity,而P持有activity的引用无法释放，造成内存泄漏
+ *      解决方法：
+ *          a。baseActivity中在oncreate/onDestroy中创建和释放p中的引用释放掉
+ *          b。p实现lifeCycleObserver接口，activity监听
  * 8.OkHttp怎么实现连接池
+ *      频繁的进行建立Sokcet连接（TCP三次握手）和断开Socket（TCP四次分手）是非常消耗网络资源和浪费时间的，
+ *      HTTP中的keepalive连接对于 降低延迟和提升速度有非常重要的作用
+ *      Okhttp支持5个并发KeepAlive，默认链路生命为5分钟(链路空闲后，保持存活的时间)，
+ *      连接池有ConectionPool实现，对连接进行回收和管理
+ *
  * 9.如果让你来实现一个网络框架，你会考虑什么
  * 10.你做过什么性能优化的工作
  * 11.热修复的原理，资源的热修复的原理,会不会有资源冲突的问题
  * 12.ViewPager中嵌套ViewPager怎么处理滑动冲突
  * 13.android源码中有哪些设计模式
  * 14.说说binder机制的原理
- *
+ *      Binder是一种进程间通信机制
+ *      android系统通过动态添加一个内核模块运行在内核空间（叫binder驱动），用户进程之间通过这个内核模块作为桥梁来实现通信。
+ *      操作系统mmap()是一中内存映射的方法，内存映射简单的讲就是将用户空间的一块内存区域映射到内核空间，
+ *      映射关系建立后用户空间/内核空间修改后可以即时反应给对方
+ *      内存映射可以减少数据拷贝次数
  * 1.ViewPager2原理
  * 2.LifeCycle的原理是怎样的？
  * 3.ViewModel为什么在旋转屏幕后不会丢失状态
@@ -107,6 +130,10 @@ package cn.wxb.kotlin;
  * 7.Activity生命周期
  *
  * 1.string,equals,==有什么区别
+ *      a。equals 是方法， == 是操作符
+ *      b。基本类型变量只能用 == 比较的是值
+ *      c。引用类型变量都是继承Object，默认不重写的话equals和==是一样的，都是比较内存中的引用地址
+ *      d. String类重写类equals方法，比较的是值
  * 2.AsyncTask内存泄露
  * 3.dispatchTouchEvent,onInterceptEvent,onTouchEvent顺序，关系
  * 4.onMeasure,onLayout,onDraw关系
@@ -168,6 +195,8 @@ package cn.wxb.kotlin;
  * 8.mvp与mvvm模式的区别是什么？
  * 9.JetPack组件用过哪些？lifeCycle的原理是什么？如果在onStart里面订阅，会回调onCreate吗？
  * 10.单例模式有什么缺点？
+ *      优点：提供了对唯一实例的受控访问；避免对共享资源的多重占用
+ *      缺点：单例类的职责过重，在一定程度上违背了“单一职责原则”；
  * 11.说说App的启动过程,在ActivityThread的main方法里面做了什么事，什么时候启动第一个Activity？
  * 12.说说你对Handler机制的了解，同步消息，异步消息等
  * 13.说说你对屏幕刷新机制的了解，双重缓冲，三重缓冲，黄油模型
@@ -189,15 +218,37 @@ package cn.wxb.kotlin;
  * 10.RecyclerView嵌套RecyclerView，NestScrollView嵌套ScrollView滑动冲突
  * 11.ViewGroup在Action_Move时onIntercept返回true，事件怎么传递
  * 12.Launcher启动图标，有几个进程？
- * 13.JMM可见性，原子性，有序性，synchronized可以保证什么？
+ * 13.JMM可见性，原子性，有序性，synchronized 可以保证什么？
+ *      a，synchronized修饰在非静态方法上和synchronized(this){} 同步代码块效果是一样的
+ *      b，synchronized修饰在静态方法上和 synchronized (SyncTest1.class) {} 同步代码块效果是一样的
+ *      c，synchronized修饰在非静态方法表示锁的是当前对象，修饰静态方法表示锁的是类对象(一个类在jvm中只有一个class对象)
+ *      d. 另外：volatitle 只能保证可见性和有序性，但不能保证原子性；synchronized/Locked接口/Atomic类型保证原子性
+ *
  * 14.源码中有哪里用到了AtomicInt
  * 15.AQS了解吗？
  * 16.Activity内LinearLayout红色wrap_content,包含View绿色wrap_content,求界面颜色
  * 17.ViewModel的使用中有什么坑？
  * 18.有用DSL,anko写过布局吗？
  * 19.HashMap查找的时间复杂度是多少？
+ *     时间复杂度是要区分增删改查的。。主要看查询的时间复杂度
+ *     数组的查询时间复杂度是O(n)
+ *     链表的查询时间复杂度是O(n)
+ *     hashMap的查询时间复杂度  最理想状态(桶中链表长度为1)是O(1),最差是O(n)
  * 20.阿里编程规范不建议使用线程池，为什么？
+ *      1）newFixedThreadPool和newSingleThreadExecutor:
+ *         主要问题是堆积的请求处理队列可能会耗费非常大的内存，甚至OOM。
+ *         因为，创建了一个无界队列LinkedBlockingQueuesize，是一个最大值为Integer.MAX_VALUE的线程阻塞队列，
+ *         当添加任务的速度大于线程池处理任务的速度，可能会在队列堆积大量的请求，消耗很大的内存，甚至导致OOM
+ *      2）newCachedThreadPool和newScheduledThreadPool:
+ *         主要问题是线程数最大数是Integer.MAX_VALUE，可能会创建数量非常多的线程，甚至OOM。
+ *         创建的线程池允许的最大线程数是Integer.MAX_VALUE，空闲线程存活时间为0，
+ *         当添加任务的速度大于线程池处理任务的速度，可能会创建大量的线程，消耗资源，甚至导致OOM
+ *
  * 21.四种线程池原理？
+ * newCachedThreadPool——可缓存线程池
+ * newFixedThreadPool————指定线程数量
+ * newSingleThreadExecutor————单线程的Executor
+ * newScheduleThreadPool——定时线程池
  * 22.了解哪些算法？
  * 23.IdleHandler用过吗？
  *
