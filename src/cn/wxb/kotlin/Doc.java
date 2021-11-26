@@ -136,6 +136,9 @@ package cn.wxb.kotlin;
  *      d. String类重写类equals方法，比较的是值
  * 2.AsyncTask内存泄露
  * 3.dispatchTouchEvent,onInterceptEvent,onTouchEvent顺序，关系
+ *    viewGroup的dispatchTouchEvent满足如下两个条件，则继续传递事件:
+ *              a. MotionEvent.ACTION_DOWN事件或者mFirstTouchTarget非空也就是有子view在处理事件
+ *              b.子view没有做拦截，也就是没有调用ViewParent#requestDisallowInterceptTouchEvent(true)
  * 4.onMeasure,onLayout,onDraw关系
  * 5.算法题，反转数组
  * 6.算法题，链表求和
@@ -199,6 +202,11 @@ package cn.wxb.kotlin;
  *      缺点：单例类的职责过重，在一定程度上违背了“单一职责原则”；
  * 11.说说App的启动过程,在ActivityThread的main方法里面做了什么事，什么时候启动第一个Activity？
  * 12.说说你对Handler机制的了解，同步消息，异步消息等
+ *      nativePollOnce(ptr, nextPollTimeoutMillis)，这是一个native方法，
+ *      实际作用就是通过Native层的MessageQueue阻塞nextPollTimeoutMillis毫秒的时间。
+ *      1.如果nextPollTimeoutMillis=-1，一直阻塞不会超时。
+ *      2.如果nextPollTimeoutMillis=0，不会阻塞，立即返回
+ *      3.如果nextPollTimeoutMillis>0，最长阻塞nextPollTimeoutMillis毫秒(超时)，如果期间有程序唤醒会立即返回。
  * 13.说说你对屏幕刷新机制的了解，双重缓冲，三重缓冲，黄油模型
  * 14.onCreate,onResume,onStart里面，什么地方可以获得宽高
  * 15.为什么view.post可以获得宽高，有看过view.post的源码吗？
@@ -208,6 +216,12 @@ package cn.wxb.kotlin;
  *
  * 1.JVM类加载机制了解吗，类什么时候会被加载？类加载的过程具体生命周期是怎样的？
  * 2.Handler内存泄漏的GCRoot是什么？
+ *      当直接在activity中声明handler时，由于后面的匿名内部类，使handler持有了activity的引用。
+ *       当任务未执行完，即message未被执行完时，message持有了messageQueue的引用。
+ *      messageQueue持有了mLooper的引用。
+ *      mLooper持有sThreadLocal 的引用。
+ *      sThreadLocal 是一个静态变量，无法被回收，最终导致了activity无法被回收，造成了内存泄漏
+ *
  * 3.动画里面用到了什么设计模式？
  * 4.OkHttp里面用到了什么设计模式？
  * 5.OkHttp连接池是怎么实现的？里面怎么处理SSL？
@@ -256,6 +270,18 @@ package cn.wxb.kotlin;
  * 2.如何求当前Activity View的深度
  * 3.多进程怎么实现？如果启动一个多进程APP，会有几个进程运行？
  * 4.反射可以反射final修饰的字段吗？
+ *      static final修饰字段时，要想通过反射修改字段需要先通过反射去掉final修饰符才能修改成功，否则会报异常错误;
+ *      如果final字段值是运行时赋值的，则修改后无论通过何种方式访问获得的都是新值;
+ *      基本类型、String类型直接赋值时由于JVM编译优化，编译时期用到字段的地方会直接被字段值替换,
+ *      导致通过反射修改字段值后用到字段的地方仍是原值，但通过反射访问获取到的是新值
+ *
+ *      构造方法赋值：
+ *          构造方法赋值在JVM编译期不会优化，运行时决定字段的值，修改后通过反射和其他方式访问到的都是新值。
+ *       直接赋值：
+ *          基本类型、String类型：JVM编译期会优化成常量，导致修改后的值通过反射可以访问到新值，其他方式访问到的仍是旧值。
+ *          对象类型：JVM编译期不会优化，运行时决定字段的值，修改后通过反射和其他方式访问到的都是新值。
+ *       间接赋值：
+ *          间接赋值在JVM编译期不会优化，运行时决定字段的值，修改后通过反射和其他方式访问到的都是新值。
  * 5.Activity与AppCompactActivity区别，Activity会打包到包里面去吗？
  * 6.如何让两个线程循环交替打印
  * 7.怎么中止一个线程，Thread.Interupt一定有效吗？
