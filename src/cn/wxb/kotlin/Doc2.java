@@ -128,6 +128,10 @@ package cn.wxb.kotlin;
  * 在Activity中获取某个View的宽高有几种方法
  * 为什么onCreate获取不到View的宽高
  * View#post与Handler#post的区别
+ *      View.post 将runnable先存起来(HandlerActionQueue, 默认数组是4)，等viewRootImpl.performTraversals调用时，将其加入主线程的messageQueue中，
+ *      因performTraversals也是被加入messageQueue中进行处理的，
+ *      所以等performTraversals方法执行完onMeasure/onLayout/onDraw执行完之后，才会执行view.post发送的runnable，
+ *      此时是可以获取到view的宽高的。
  * Android绘制和屏幕刷新机制原理
  * Choreography原理
  * 什么是双缓冲
@@ -149,14 +153,50 @@ package cn.wxb.kotlin;
  * 7.View事件分发
  * View事件分发机制
  * view的onTouchEvent，OnClickListerner和OnTouchListener的onTouch方法 三者优先级
+ *      onTouch:指的是View设置的OnTouchListener接口的onTouch（）方法
+ *      onTouchEvent：指的是事件分发中的重要方法（dispatchTouchEvent，onInterceptTouchEvent，onTouchEvent）
+ *      onClick：指的是View设置的OnClickListener接口的onClick（）方法
+ *
+ *      onTouch（dispatchTouchEvent中处理）>onTouchEvent>onClick（onTouchEvent中处理）
  * onTouch 和onTouchEvent 的区别
  * ACTION_CANCEL什么时候触发
+ *      当子View至始至终没有事件处理权时，该事件是不会发生的；当子View的事件处理权从有到无时，
+ *      在失去处理权的那一刻子View会被告知，也就是收到cancel事件
+ *      在子View处理事件的过程中，父View对事件拦截
  * 事件是先到DecorView还是先到Window
+ *      ViewRootImpl——>DecorView——>Activity——>PhoneWindow——>DecorView——>ViewGroup
  * 点击事件被拦截，但是想传到下面的View，如何操作
  * 如何解决View的事件冲突
  * 在 ViewGroup 中的 onTouchEvent 中消费 ACTION_DOWN 事件，ACTION_UP事件是怎么传递
+ *      -> Activity.dispatchTouchEvent()
+ *      -> ViewGroup1.dispatchTouchEvent()
+ *      -> ViewGroup1.onTouchEvent()
+ *
  * Activity ViewGroup和View都不消费ACTION_DOWN,那么ACTION_UP事件是怎么传递的
+ *      都不消费action_down，其事件传递如下：
+ *      -> Activity.dispatchTouchEvent()
+ *      -> ViewGroup1.dispatchTouchEvent()
+ *      -> ViewGroup1.onInterceptTouchEvent()
+ *      -> view1.dispatchTouchEvent()
+ *      -> view1.onTouchEvent()
+ *      -> ViewGroup1.onTouchEvent()
+ *      -> Activity.onTouchEvent();
+ *
+ *      action_up/action_move事件如下：
+ *      -> Activity.dispatchTouchEvent()
+ *      -> Activity.onTouchEvent();
+ *
+ *
+ *      为什么子 View 不消费 ACTION_DOWN,之后的所有事件都不会向下传递了？
+ *      mFirstTouchTarget。当子 view 对事件进行处理的时，那么 mFirstTouchTarget 就会被赋值，
+ *      若是子 view 不对事件进行处理，那么 mFirstTouchTarget 就为 null，之后 VIewGroup 就会默认拦截所有的事件
+ *。
+ *
  * 同时对父 View 和子 View 设置点击方法，优先响应哪个
+ *          优先响应子 view，原因很简单，如果先响应父 view，那么子 view 将永远无法响应，
+ *          父 view 要优先响应事件，必须先调用 onInterceptTouchEvent 对事件进行拦截，
+ *          那么事件不会再往下传递，直接交给父 view 的 onTouchEvent 处理
+ *
  * requestDisallowInterceptTouchEvent的调用时机
  * 8.RecycleView
  * RecyclerView的多级缓存机制,每一级缓存具体作用是什么,分别在什么场景下会用到哪些缓存
@@ -325,7 +365,29 @@ package cn.wxb.kotlin;
  * Okhttp缓存怎么处理
  * Okhttp连接池和socket复用
  * Glide怎么绑定生命周期
+ *
+ *      1、Glide通过高度封装之后，通过外观模式对外提供了非常简洁的API调用，貌似外观模式的很多库都很受欢迎；
+ *      2、Glide自动感知生命周期，很节约资源，不会内存泄漏；
+ *      3、超级强大的缓存机制；
+ *      4、各种图片转换，超级方便
+ *
+ *      Glide中一个重要的特性，就是Request可以随着Activity或Fragment的onStart而resume，onStop而pause，onDestroy而clear。
+ *      从而节约流量和内存，并且防止内存泄露
+ *      基于当前Activity添加无UI的Fragment，通过Fragment接收Activity传递的生命周期。
+ *      Fragment和RequestManager基于Lifecycle建立联系，并传递生命周期事件，实现生命周期感知
+ *
+ *      Glide：库提供对外调用方法的类，传入页面引用。
+ *      RequestManagerRetriever：一个处理中间类，获取RequestManager和RequestManagerFragment，并将两者绑定
+ *      RequestManagerFragment：无UI的fragment，与RequestManager绑定，感知并传递页面的生命周期
+ *      RequestManager：实现了LifeCycleListener，主要作用为结合Activity或Fragment生命周期，对Request进行管理，
+ *                  如pauseRequests(), resumeRequests(), clearRequests()。
+ *      LifecycleListener：接口，定义生命周期管理方法，onStart(), onStop(), onDestroy(). RequestManager实现了它。
+ *      ActivityFragmentLifecycle：保存fragment和Requestmanager映射关系的类，管理LifecycleListener，
+ *                          空白Fragment会回调它的onStart(), onStop(), onDestroy()。
+ *
  * Glide缓存机制,内存缓存，磁盘缓存
+ *       内存缓存的主要作用是防止应用重复将图片数据读取到内存当中；
+ *       而硬盘缓存的主要作用是防止应用重复从网络或其他地方下载和读取数据。
  * Glide与Picasso的区别
  * LruCache原理
  * Retrofit源码流程,动态代理

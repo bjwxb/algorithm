@@ -11,4 +11,10 @@ public class Node<T> {
         this.value = value;
         this.next = next;
     }
+
+    public static void main(String[] args) {
+
+    }
 }
+
+
