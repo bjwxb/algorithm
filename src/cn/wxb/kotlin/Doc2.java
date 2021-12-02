@@ -141,7 +141,14 @@ package cn.wxb.kotlin;
  * SurfaceView为什么可以直接子线程绘制
  * SurfaceView、TextureView、SurfaceTexture、GLSurfaceView
  * getWidth()方法和getMeasureWidth()区别
+ *      View的高宽是由View本身和Parent容器共同决定的。
+ *      getMeasuredWidth()和getWidth()分别对应于视图绘制的measure和layout阶段。
+ *      getMeasuredWidth()获取的是View原始的大小，也就是这个View在XML文件中配置或者是代码中设置的大小。
+ *      getWidth()获取的是这个View最终显示的大小，这个大小有可能等于原始的大小，也有可能不相等。
+ *
  * invalidate() 和 postInvalidate() 的区别
+ *    invalidate，在UI线程自身中刷先ui
+ *    postInvalidate，在非UI线程中刷新，实际是通过handler实现，最后调用的还是invalidate
  * Requestlayout，onlayout，onDraw，DrawChild区别与联系
  * LinearLayout、FrameLayout 和 RelativeLayout 哪个效率高
  * LinearLayout的绘制流程
@@ -404,10 +411,6 @@ package cn.wxb.kotlin;
  *          资源的使用频率比较高，这个时候如果从LruCache取资源，LinkHashmap查找资源的效率不是很高的。
  *          所以他会设计一个弱引用来缓存当前活跃资源，来替Lrucache减压。
  *
- * 作者：唠嗑008
- * 链接：https://www.jianshu.com/p/b85f89fce019
- * 来源：简书
- * 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
  *
  * Glide与Picasso的区别
  * LruCache原理
