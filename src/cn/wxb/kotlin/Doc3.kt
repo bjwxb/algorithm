@@ -12,6 +12,19 @@ tinker的原理是什么,还用过什么热修复框架，robust的原理是什�
 说说你对注解的了解，是怎么解析的
 
 synchronized是公平锁还是非公平锁,ReteranLock是公平锁吗？是怎么实现的
+        ReentrantLock 默认采用非公平锁，除非在构造方法中传入参数 true
+        synchronized是非公平锁，没有浪费线程唤醒阶段的时间，执行新调用的方法，增加吞吐量，缺点是可能会造成饥饿锁
+        公平锁：
+        获取不到锁的时候，会自动加入队列，等待线程释放后，队列的第一个线程获取锁
+        非公平锁:
+        获取不到锁的时候，会自动加入队列，等待线程释放锁后所有等待的线程同时去竞争
+        非公平锁和公平锁的两处不同：
+        非公平锁在调用 lock 后，首先就会调用 CAS 进行一次抢锁，如果这个时候恰巧锁没有被占用，那么直接就获取到锁返回了。
+        非公平锁在 CAS 失败后，和公平锁一样都会进入到 tryAcquire 方法，在 tryAcquire 方法中，如果发现锁这个时候被释放了（state == 0），
+        非公平锁会直接 CAS 抢锁，但是公平锁会判断等待队列是否有线程处于等待状态，如果有则不去抢锁，乖乖排到后面。
+        公平锁和非公平锁就这两点区别，如果这两次 CAS 都不成功，那么后面非公平锁和公平锁是一样的，都要进入到阻塞队列等待唤醒。
+        相对来说，非公平锁会有更好的性能，因为它的吞吐量比较大。当然，非公平锁让获取锁的时间变得更加不确定，
+        可能会导致在阻塞队列中的线程长期处于饥饿状态
 
 泛型是怎么解析的，比如在retrofit中的泛型是怎么解析的
 
@@ -131,8 +144,21 @@ ViewPager2原理
 LifeCycle的原理是怎样的？
 
 ViewModel为什么在旋转屏幕后不会丢失状态
+        配置变更主要是指：横竖屏切换、分辨率调整、权限变更、系统字体样式变更
+        在配置发生变化时，onRetainNonConfigurationInstance（）保存状态，getLastNonConfigurationInstance()恢复。
 
 Drawable与View有什么区别,Drawable有哪些子类
+        Bitmap 是位图信息的存储，就是一个矩形图像每个像素的颜色信息的存储器。
+
+        2.1.Drawable是一种可以在Canvas上进行绘制的抽象的概念。Drawable 是一个可以调用Canvas来进行绘制的上层工具。
+                Drawable.draw(canvas)可以将Drawable设置的绘制内容绘制到Canvas中。
+        2.2.Drawable的内部存储的是绘制规则，这个规则可以是一个具体的Bitmap，也可以是一个纯粹的颜色，甚至可以是一个抽象。
+                灵活的描述。Drawable可以不含有具体的像素信息，只要它含有的信息足以在draw(canvas)方法中被调用时进行绘制就够了。
+                也就是说，颜色、图片等都可以是一个Drawable
+        2.3.Drawable 可以通过XML定义，或者通过代码构建
+        2.4.Android 中 Drawable是一个抽象类，每个具体的Drawable都是其子类。
+        2.5.由于Drawable存储的只是绘制规则，因此他在draw()方法被调用前，需要先调用Drawable.setBounds()来为它设置绘制边界。
+        drawable优点：1.使用简单，比自定义View的成本低；2.非图片类的Drawable所占用空间小，能减小apk大小
 
 属性动画更新时会回调onDraw吗？
 
@@ -145,12 +171,36 @@ PathClassLoader与DexClassLoader有什么区别
 这些年有做一些什么比较难的工作？
 
 编译时注解与运行时注解，为什么retrofit要使用运行时注解？什么时候用运行时注解？
+        retrofit的底层采用动态代理获取接口函数，然后获取对应的注解来实现
+        内建注解
+        元注解：@Target： 表示该注解用于什么地方
+               @Retention： 表示在什么级别保存该注解信息
+               @Documented： 将此注解包含在 javadoc
+               @Inherited： 允许子类继承父类中的注解
+        自定义注解：判断注解自身是否存在，来提供信息；获取注解中的元数据
+
+        Annotation（注解）是被动的元数据，永远不会有主动行为，所以我们需要通过使用反射，才能让我们的注解产生意义
+        1. 源码注解（RetentionPolicy.SOURCE）： 注解只保留在源文件，当Java文件编译成class文件的时候，注解被遗弃。
+        2. 编译时注解（RetentionPolicy.CLASS）： 注解被保留到class文件，但jvm加载class文件时候被遗弃，这是默认的生命周期。
+        3. 运行时注解（RetentionPolicy.RUNTIME）： 注解不仅被保存到class文件中，jvm加载class文件之后，仍然存在。
+
+        运行时注解： 通过 反射 机制获取注解对象
+        编译时注解： 通过 APT 方式获取注解对象
+                APT是一种处理注解的工具，确切的说它是 javac 的一个工具，它用来在编译时扫描和处理注解，
+                一个注解的注解处理器，以 java 代码（或者编译过的字节码）作为输入，生成 .java 文件作为输出，
+                核心是交给自己定义的处理器去处理
+
 
 kotlin lazy使用,lazy viewmodel
 
 有没有看一下Google官方的ViewModel demo
 
 ViewModel在Activity初始化与在Fragment中初始化，有什么区别？
+        ViewModel 在 Fragment 中不会因配置改变而销毁的原因其实是因为其声明的
+        ViewModel 是存储在 FragmentManagerViewModel 中的，而 FragmentManagerViewModel 是存储在宿主 Activity 中的
+        ViewModelStore 中，又因 Activity 中 ViewModelStore不会因配置改变而销毁，
+        故 Fragment 中 ViewModel 也不会因配置改变而销毁
+
 
 kotlin与Java互相调用有什么问题？
 
@@ -195,6 +245,14 @@ native如何对h5进行鉴权，让某些页面可以调，某些页面不能调
 有看过哪些框架的源码吗？
 
 viewModel是怎么实现双向数据绑定的？
+        ViewModel 类让数据可在发生屏幕旋转等配置更改后继续留存(在横竖屏切换时，可以保留数据)，
+        在actvity的onDestroy时/Fragment的onDetach时就会clear
+
+        LiveData 是单向数据观察者可以感知生命周期：处于活动状态才会更新数据；配置改变时可以立即接受最新可用数据；无内存泄漏，不用手动处理订阅
+
+        viewmodel + dataBinding + liveData 实现双向数据绑定
+        DataBindingUtil.setContentView -> return activityBinding
+        viewModel持有LiveData包装的数据发生变化时通知view，而dataBinding通过设置lifeCyclerOwner
 
 viewModel怎么实现自动处理生命周期？
 
@@ -284,7 +342,11 @@ mvvm双向数据绑定的原理是怎样的？ViewModel
 
 猿辅导
 泛型有什么优点？
-
+        保证了类型的安全性：泛型在编译器约束了变量的类型，保证了类型的安全性，如List的使用
+        避免了类型的强制转换
+        提高方法的复用性
+        避免了不必要的装箱、拆箱操作，提高程序的性能：泛型变量固定了类型，使用的时候就已经知道是值类型还是引用类型，
+                避免了不必要的装箱、拆箱操作
 动态代理有什么作用？
 
 拉圾回收的GCRoot是什么？
@@ -303,6 +365,9 @@ Handler机制了解吗？一个线程有几个Looper？为什么？
 你们项目中的难点是什么？
 
 编译期注解处理的是字节码还是java文件
+        简单来说注解的作用就是将我们的需要的数据储存起来，在以后的某一个时刻（可能是编译时，也可能是运行时）去调用它
+        Annotation Processing Tool注解处理器是 javac 自带的一个工具，用来在编译时期扫描处理注解信息
+        一个特定注解的处理器以 java 源代码（或者已编译的字节码）作为输入，然后生成一些文件（通常是.java文件）作为输出
 
 你在项目中有用到什么设计模式吗？
 

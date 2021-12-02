@@ -102,6 +102,10 @@ package cn.wxb.kotlin;
  * 11.kotlin lazy使用,lazy viewmodel
  * 12.有没有看一下Google官方的ViewModel demo
  * 13.ViewModel在Activity初始化与在Fragment中初始化，有什么区别？
+ *      ViewModel 在 Fragment 中不会因配置改变而销毁的原因其实是因为其声明的 ViewModel 是存储在 FragmentManagerViewModel 中的，
+ *      而 FragmentManagerViewModel 是存储在宿主 Activity 中的 ViewModelStore 中，
+ *      又因 Activity 中 ViewModelStore不会因配置改变而销毁，故 Fragment 中 ViewModel 也不会因配置改变而销毁。
+ *
  * 14.kotlin与Java互相调用有什么问题？
  * 15.retrofit怎么做post请求
  * 16.界面优化的一些方法，ConstraintLayout实现三等分,ConstraintLayout动画.
@@ -316,6 +320,14 @@ package cn.wxb.kotlin;
  * 12.了解APK打包的过程吗？
  * 13.class文件的组成？常量池里面有什么内容？
  * 14.自动装箱发生在什么时候？编译期还是运行期
+ *      自动装箱拆箱机制其实是编译器自动完成的替换，装箱阶段自动替换为了 valueOf 方法，拆箱阶段自动替换为了 xxxValue 方法。
+ *      对于 Integer 类型的 valueOf 方法参数如果是 -128~127 之间的值会直接返回内部缓存池中已经存在对象的引用，参数是其他范围值则返回新建对象；
+ *      而 Double 类型与 Integer 类型一样会调用到 Double 的 valueOf 方法，但是 Double 的区别在于不管传入的参数值是多少都会
+ *      new 一个对象来表达该数值（因为在指定范围内浮点型数据个数是不确定的，整型等个数是确定的，所以可以 Cache）。
+ *      注意：Integer、Short、Byte、Character、Long 的 valueOf 方法实现类似，而 Double 和 Float 比较特殊，每次返回新包装对象。
+ *      对于两边都是包装类型的比较 = = 比较的是引用，equals 比较的是值，
+ *      对于两边有一边是表达式（包含算数运算）则 = = 比较的是数值（自动触发拆箱过程），对于包装类型 equals 方法不会进行类型转换
+ *
  * 15.bugly日志收集的原理是什么？
  * 16.启动优化做过什么工作？如果首页就要用到的初始化？
  * 17.DataBinding原理
@@ -324,6 +336,8 @@ package cn.wxb.kotlin;
  * 1.插件化的原理是什么？有没有什么非运行时插件化的解决方案？
  * 2.ARouter的原理是怎样的？注解处理器是处理java还是字节码
  * 3.java和字节码有什么区别？
+ *      java是源代码
+ *      字节码是Java虚拟机的机器语言，是Java编译器编译Java源文件（.java）产生的“目标文件
  * 4.kotlin空安全的原理是什么？
  * 5.性能优化做过什么工作?有用过什么工具？有没有精确测量的工具？
  * 6.kotlinc与javac编译字节码有什么区别？
@@ -362,7 +376,21 @@ package cn.wxb.kotlin;
  * 7.怎么优化xml inflate的时间，涉及IO与反射。了解compose吗？
  * 8.算法题：二叉树的每一层最左边节点
  * 9.RecyclerView 缓存结构，RecyclerView预取，RecyclerView局部刷新
+ *      当你使用局部刷新时，前后都是同一个 ViewHolder ，如果位置没有变化，就不会执行动画效果
+ *      ；而当你不使用局部刷新时，使用的不是同一个 ViewHolder ，不管位置是否变化，都会执行相关动画，
+ *      所以你看到的 itemView 会闪烁一下。当我们多次调用 notifyItemChange() 方法时，
+ *      也不会多次触发 requestLayout() 和回调 bindViewHolder()
+ *
+ *      notifyItemChange(position, payload-Object)
+ *      通过对payload设置不同的值，在item刷新时可以通过判断payload分别处理不同view控件的刷新
+ *
  * 11.setOnTouchListener,onClickeListener和onTouchEvent的关系
  */
 public class Doc {
+
+    public static void main(String[] args) {
+        double i = Double.NaN;
+        double j = i;
+        System.out.println(">>> " + (i > j || i <= j));
+    }
 }

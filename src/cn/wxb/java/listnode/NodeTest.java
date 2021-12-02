@@ -6,7 +6,7 @@ import java.util.Stack;
 public class NodeTest {
 
     public static void main(String[] args) {
-        Node<Integer> node = initNodeList(5);
+        Node<Integer> node = initNodeList(10);
         printNode(node);
         System.out.println("================================");
 //        printNode(reverseNodeList(node));
