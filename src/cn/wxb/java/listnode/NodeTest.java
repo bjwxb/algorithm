@@ -6,15 +6,40 @@ import java.util.Stack;
 public class NodeTest {
 
     public static void main(String[] args) {
-        Node node = initNodeList(5);
+        Node<Integer> node = initNodeList(10);
         printNode(node);
         System.out.println("================================");
 //        printNode(reverseNodeList(node));
 //        printNode(reverseNodeListByRecursion(node));
         System.out.println(">>> " + findKthToTail(node, 2).value);
         System.out.println("====== isLoop = " + isLoop(node));
+        Node<Integer> n = deleteNodeVal(node, 5);
+        printNode(n);
     }
 
+    /**
+     * 删除链表中指定值，并返回剩余链表
+     * @param head 链表
+     * @param val value
+     * @return node
+     */
+    private static Node deleteNodeVal(Node<Integer> head, int val){
+        if(null == head) return null;
+        if(head.value == val) return head.next;
+
+        Node<Integer> current = head.next;
+        while (current.next != null){
+            Node<Integer> tmp = current.next;
+            if (tmp.value == val){
+                current.next = tmp.next;
+                break;
+            }
+            current = tmp;
+        }
+
+
+        return head;
+    }
 
     /**
      * 判断链表是不是环形链表
