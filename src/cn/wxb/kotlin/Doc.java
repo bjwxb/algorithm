@@ -1,5 +1,7 @@
 package cn.wxb.kotlin;
 
+import java.util.concurrent.ThreadPoolExecutor;
+
 /**
  * 1.java有什么特性，继承有什么用处，多态有什么用处
  * 2.反射是什么，在哪里用到，怎么利用反射创建一个对象
@@ -12,7 +14,7 @@ package cn.wxb.kotlin;
  * 5.垃圾回收机制与jvm结构
  * 6.自定义View,事件分发机制讲一讲
  * 7.http与https有什么区别
- *      http是超文本传输协议，信息是明文传输；https则是具有安全性传输协议的ssl/tls加密传输协议
+ *      http是超文本传输协议，信息是明文传输；https则是具有安全性传输协议的ssl/tls加密传输协议t
  *      http/https连接方式不同，http端口8080，https端口443
  *      http的连接很简单，是无状态的；HTTPS协议是由SSL/TLS+HTTP协议构建的可进行加密传输、身份认证的网络协议，比http协议安全。
  *      https需要CA证书
@@ -51,6 +53,25 @@ package cn.wxb.kotlin;
  * 8.mvp与mvvm的区别，mvvm怎么更新UI,databinding用得多吗,databinding的原理？
  * 9.kotlin ?的原理
  * 10.在项目中有直接使用tcp,socket来发送消息吗
+ *      TCP向上层提供面向连接的可靠服务 ，UDP向上层提供无连接不可靠服务。
+ *      虽然 UDP 并没有 TCP 传输来的准确，但是也能在很多实时性要求高的地方有所作为
+ *      对数据准确性要求高，速度可以相对较慢的，可以选用TCP
+ *
+ *      UDP协议全称是用户数据报协议，在网络中它与TCP协议一样用于处理数据包，是一种无连接的协议
+ *       a. 面向无连接 - 想发数据就可以开始发送了，并且也只是数据报文的搬运工，不会对数据报文进行任何拆分和拼接操作
+ *       b. UDP 不止支持一对一的传输方式，同样支持一对多，多对多，多对一的方式，也就是说 UDP 提供了单播，多播，广播的功能
+ *       c. UDP是面向报文的 - 发送方的UDP对应用程序交下来的报文，在添加首部后就向下交付IP层。
+ *          UDP对应用层交下来的报文，既不合并，也不拆分，而是保留这些报文的边界。因此，应用程序必须选择合适大小的报文
+ *       d. 不可靠性 - 首先不可靠性体现在无连接上，通信都不需要建立连接，想发就发,并且收到什么数据就传递什么数据，并且也不会备份数据，
+ *          发送数据也不会关心对方是否已经正确接收到数据了
+ *       e. 头部开销小，传输数据报文时是很高效的
+ *      Tcp特点：
+ *        a. 面向连接 - 发送数据之前必须在两端建立连接。建立连接的方法是“三次握手”，这样能建立可靠的连接
+ *        b. 仅支持单播传输 - 只能进行点对点的数据传输
+ *        c. 面向字节流 - TCP不像UDP一样那样一个个报文独立地传输，而是在不保留报文边界的情况下以字节流方式进行传输
+ *        d. 可靠传输 - 对于可靠传输，判断丢包，误码靠的是TCP的段编号以及确认号
+ *        e. 提供拥塞控制 - 当网络出现拥塞的时候，TCP能够减小向网络注入数据的速率和数量，缓解拥塞
+ *        f. TCP提供全双工通信 - TCP允许通信双方的应用程序在任何时候都能发送数据，因为TCP连接的两端都设有缓存，用来临时存放双向通信的数据
  * 11.如何在网络框架里直接避免内存泄漏，不需要在presenter中释放订阅
  * 12.生命周期都是通过什么调用的？有用过AIDL吗？
  * 13.讲一下RecyclerView的缓存机制,滑动10个，再滑回去，会有几个执行onBindView
@@ -253,6 +274,14 @@ package cn.wxb.kotlin;
  *     链表的查询时间复杂度是O(n)
  *     hashMap的查询时间复杂度  最理想状态(桶中链表长度为1)是O(1),最差是O(n)
  * 20.阿里编程规范不建议使用线程池，为什么？
+ *
+ *      核心线程 -》 任务队列 》 非核心线程 -》 达到最大线程数时执行拒绝策略
+ *      当提交一个任务时，线程池创建一个新线程执行任务，直到当前线程数等于corePoolSize,
+ *      即使有其他空闲线程能够执行新来的任务, 也会继续创建线程；
+ *      如果当前线程数为corePoolSize，继续提交的任务被保存到阻塞队列中，等待被执行；
+ *      如果执行了线程池的prestartAllCoreThreads()方法，线程池会提前创建并启动所有核心线程
+ *
+ *
  *      1）newFixedThreadPool和newSingleThreadExecutor:
  *         主要问题是堆积的请求处理队列可能会耗费非常大的内存，甚至OOM。
  *         因为，创建了一个无界队列LinkedBlockingQueuesize，是一个最大值为Integer.MAX_VALUE的线程阻塞队列，
@@ -263,10 +292,24 @@ package cn.wxb.kotlin;
  *         当添加任务的速度大于线程池处理任务的速度，可能会创建大量的线程，消耗资源，甚至导致OOM
  *
  * 21.四种线程池原理？
- * newCachedThreadPool——可缓存线程池
- * newFixedThreadPool————指定线程数量
- * newSingleThreadExecutor————单线程的Executor
- * newScheduleThreadPool——定时线程池
+ *      //存放任务的阻塞队列
+ *      private final BlockingQueue<Runnable> workQueue;
+ *      //worker的集合,用set来存放
+ *      private final HashSet<Worker> workers = new HashSet<Worker>();
+ *      //历史达到的worker数最大值
+ *      private int largestPoolSize;
+ *      //当队列满了并且worker的数量达到maxSize的时候,执行具体的拒绝策略
+ *      private volatile RejectedExecutionHandler handler;
+ *      //超出coreSize的worker的生存时间
+ *      private volatile long keepAliveTime;
+ *      //常驻worker的数量
+ *      private volatile int corePoolSize;
+ *      //最大worker的数量,一般当workQueue满了才会用到这个参数
+ *      private volatile int maximumPoolSize;
+ *      newCachedThreadPool——可缓存线程池
+ *      newFixedThreadPool————指定线程数量
+ *      newSingleThreadExecutor————单线程的Executor
+ *      newScheduleThreadPool——定时线程池
  * 22.了解哪些算法？
  * 23.IdleHandler用过吗？
  *
@@ -385,6 +428,39 @@ package cn.wxb.kotlin;
  *      通过对payload设置不同的值，在item刷新时可以通过判断payload分别处理不同view控件的刷新
  *
  * 11.setOnTouchListener,onClickeListener和onTouchEvent的关系
+ *
+ * 12. Thread、Process的区别
+ *      a. 一个程序至少有一个进程,一个进程至少有一个线程
+ *      b. 线程的划分尺度小于进程，使得多线程程序的并发性高
+ *      c. 进程在执行过程中拥有独立的内存单元，而多个线程共享内存，从而极大地提高了程序的运行效率
+ *      e. 线程在执行过程中与进程还是有区别的。每个独立的线程有一个程序运行的入口、顺序执行序列和程序的出口。
+ *          但是线程不能够独立执行，**必须依存在应用程序中，由应用程序提供多个线程执行控制
+ *      f. 多线程的意义在于一个应用程序中，有多个执行部分可以同时执行
+ * 13. singleThreadpool什么场景下使用，只有一个线程为什么不直接使用new Thread（）
+ *      a.  缓存线程、进行池化，可实现线程重复利用、避免重复创建和销毁所带来的性能开销
+ *      b. 当线程调度任务出现异常时，会重新创建一个线程替代掉发生异常的线程
+ *      c. 线程池通过队列形式来接收任务。再通过空闲线程来逐一取出进行任务调度。即线程池可以控制任务调度的执行顺序
+ *      d. 可制定拒绝策略。即任务队列已满时，后来任务的拒绝处理规则
+ *
+ * 14. kotlin和java比的异同点
+ *      kotlin相比于java的优点：
+ *      a. 空安全 - kotlin中用一个操作符“ ？”来明确指定一个对象，或者一个属性变量是否可以为空
+ *      b. 拓展方法的支持
+ *      c. 我们可以给任何类添加函数，它比那些我们项目中典型的工具类更加具有可读性
+ *      d. 函数式支持
+ *
+ *      kotlin相比于java的缺点：虽然很多时候方便了代码的编写、减少了代码量，但是会降低可读性
+ *
+ * 15。 Java的参数传递分为：值传递和引用传递
+ * 在 Java 中，除了基本数据类型（元类型）之外，还存在 类的实例对象 这个引用数据类型。而一般使用 『 = 』号做赋值操作的时候。
+ * 对于基本数据类型，实际上是拷贝的它的值，但是对于对象而言，其实赋值的只是这个对象的引用，将原对象的引用传递过去，
+ * 他们实际上还是指向的同一个对象。
+ *
+ * 而浅拷贝和深拷贝就是在这个基础之上做的区分，如果在拷贝这个对象的时候，只对基本数据类型进行了拷贝，而对引用数据类型只是进行了引用的传递，
+ * 而没有真实的创建一个新的对象，则认为是浅拷贝（方法中传入的实参默认就是浅拷贝）。反之，在对引用数据类型进行拷贝的时候，
+ * 创建了一个新的对象，并且复制其内的成员变量，则认为是深拷贝。
+ *
+ * 所以想要实现在java方法中传入对象的拷贝而不是引用，就应该考虑使用深拷贝
  */
 public class Doc {
 
@@ -392,5 +468,6 @@ public class Doc {
         double i = Double.NaN;
         double j = i;
         System.out.println(">>> " + (i > j || i <= j));
+//        ThreadPoolExecutor
     }
 }

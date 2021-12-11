@@ -147,6 +147,10 @@ ViewModel为什么在旋转屏幕后不会丢失状态
         配置变更主要是指：横竖屏切换、分辨率调整、权限变更、系统字体样式变更
         在配置发生变化时，onRetainNonConfigurationInstance（）保存状态，getLastNonConfigurationInstance()恢复。
 
+        当Activity配置发生了变化，执行了ActivityThread#performDestroyActivity方法时，
+        会把ViewModelStore存储在NonConfigurationInstances ，然后把NonConfigurationInstances 存储在ActivityClientRecord。
+        然后重启Activity时，会在attach方法，把ActivityClientRecord的NonConfigurationInstances给Activity
+
 Drawable与View有什么区别,Drawable有哪些子类
         Bitmap 是位图信息的存储，就是一个矩形图像每个像素的颜色信息的存储器。
 
