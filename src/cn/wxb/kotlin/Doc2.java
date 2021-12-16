@@ -336,6 +336,14 @@ package cn.wxb.kotlin;
  *      反序列化的serialVersionUID就是原序列化的serialVersionUID
  *
  * 23.Art & Dalvik 及其区别
+ *      a。 Dalvik - DVM, Android 平台开发的虚拟机，运行在 Android 运行时库中
+ *          负责解释器根据指令集对Dalvik字节码进行释dex文件为机器码
+ *          JIT编译器,每次执行代码，都需要Dalvik将操作码代码翻译为机器对应的微处理器指令，然后交给底层系统处理，运行效率很低
+ *      b. 在 ART 中，系统在安装应用程序时会进行一次 AOT（ahead of time compilation, 预编译），
+ *          将字节码预先编译成机器码并存储在本地，这样应用程序每次运行时就不需要执行编译了，运行 效率会大大提升，设备的耗电量也会降低
+ *          AOT缺点： 会使得应用程序的安装时间变长，尤其是一些复杂的应用；字节码预先编译成机器码，机器码需要的存储空间会多一些
+ *      c. android 7.0之后的ART使用AOT+JIT（运行时编译）
+ *
  * Art & Dalvik 及其区别
  * 24.模块化&组件化
  * 什么是模块化

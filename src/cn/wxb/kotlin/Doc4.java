@@ -30,6 +30,19 @@ import java.util.concurrent.*;
  *
  * 5。 主线程中一般情况是catch不到子线程到异常的; 通过自定义线程池的拒绝策略是可以捕获到子线程异常的
  *
+ * 6. multiDex 作用
+ *      如果App引用的库太多，方法数超过65536后无法编译。这是因为单个dex里面不能有超过65536个方法。
+ *      为什么有最大的限制呢， 因为android会把每一个类的方法id检索起来，存在一个链表结构里面。
+ *      但是这个链表的长度是用一个short类型来保存的， short占两个字节（保存-2的15次方到2的15次方-1，即-32768~32767），
+ *      最大保存的数量就是65536。
+ *      新版本的Android系统中修复了这个问题， 但是我们仍然需要对低版本的Android系统做兼容
+ *       1.精简方法数量,删除没用到的类、方法、第三方库。
+ *       2.使用ProGuard去掉一些未使用的代码
+ *       3.复杂模块采用jni的方式实现，也可以对边缘模块采用本地插件化的方式。
+ *       4.分割Dex
+ *
+ * 7。 JVM、DVM、ART的区别
+ *
  */
 public class Doc4 {
 
@@ -48,8 +61,11 @@ public class Doc4 {
         //3。 判断BlockingQueue是否已经满了，倘若还没有满，则将线程放入BlockingQueue。否则进入3
         //4。 如果创建一个新的工作线程将使当前运行的线程数量超过maximumPoolSize，则交给RejectedExecutionHandler来处理任务
         ThreadPoolExecutor executorPool = new ThreadPoolExecutor(2, 4, 10,
-                TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(2), threadFactory, rejectionHandler);
+                TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(8), threadFactory, rejectionHandler);
 
+        for (int i = 0; i< 20; i++){
+            executorPool.execute(new WorkThread("thread-" + i));
+        }
         List<String> l1 = new ArrayList<>();
         List<Object> l2 = new ArrayList<>();
 
