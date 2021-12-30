@@ -22,6 +22,11 @@ import java.util.concurrent.*;
  *          但它只能从synchronized块中调用。它释放对象的锁定，以便另一个线程可以跳入并获取锁。（使用notify唤醒）
  *      b. Thread.sleep（）是一个可以从任何上下文调用的静态方法。Thread.sleep（）暂停当前线程并且不释放任何锁。
  *      c. sleep来控制线程执行时间； wait进行多线程同步
+ *      d. sleep只是针对当前线程,而wait和notify配合使用可以实现多线程的通讯.
+ *      e. sleep不需要被唤醒,wait是需要被唤醒的
+ *      f. sleep会让出cpu资源,并且会上下文的切换,wait不一定会,因为可能会有机会重新竞争获取到锁
+ *
+ *      执行join方法的线程会让当前线程进入阻塞状态
  *
  * 4. activity A 跳转到 activity B
  *      A.onPause -> B.onCreate,onStart,onResume -> A.onStop
@@ -42,6 +47,19 @@ import java.util.concurrent.*;
  *       4.分割Dex
  *
  * 7。 JVM、DVM、ART的区别
+ *
+ *      Jvm是java虚拟机，执行class字节码
+ *      Dvm是Android虚拟机，对jvm做了许多优化，执行dex文件，dex格式是专门为Dalvik应用设计的一种压缩格式，
+ *          适合于内存和处理器速度有限的平台，允许同时独立运行多个进程
+ *      Dalvik下的应用每次运行的时候都要通过即时编译器（Android Runtime，JIT）将字节码转化为机器码，即每次应用运行的时候都需要先编译再运行
+ *      ART的优点是在安装的时候就预编译字节码为机器代码，这样在以后应用的运行时就不用再反复编译了，提高了应用的启动速度，同时也节省了手机的能耗，
+ *      缺点是应用安装的时候会比较慢，同时由于同一份代码的机器代码会比字节码大10%-20%，所以造成相同的应用在Art下的大小可能比在Dalvik下大10%左右
+ *
+ * 8。transient作用
+ *      Serializable方式序列化时
+ *      a。一旦变量被transient修饰，变量将不再是对象持久化的一部分，该变量内容在序列化后无法获得访问
+ *      b. transient关键字只能修饰变量，而不能修饰方法和类。
+ *      c. 被transient关键字修饰的变量不再能被序列化，一个静态变量不管是否被transient修饰，均不能被序列化
  *
  */
 public class Doc4 {

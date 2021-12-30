@@ -1,5 +1,7 @@
 package cn.wxb.kotlin;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -154,6 +156,10 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 6.手写双检查单例模式，各个步骤有什么区别
  * 7.Activity生命周期
  *
+ * String类为什么具有不可变性？其如何实现不可变性的？
+ *      a。将String类修饰为final的，保证其不能被继承，防止由于继承破坏其不可变性
+ *      b。将所有成员变量都修饰为private final的，private保证了外部不可修改，final保证了内部也不能修改value指向的引用
+ *          String通过在所有方法里都不去主动修改valu中值这个原则来保证String的不可变性
  * 1.string,equals,==有什么区别
  *      a。equals 是方法， == 是操作符
  *      b。基本类型变量只能用 == 比较的是值
@@ -168,6 +174,33 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 5.算法题，反转数组
  * 6.算法题，链表求和
  * 7.说说你对协程的理解
+ *      协程就是切线程；
+ *      挂起就是可以自动切回来的切线程
+ *      挂起的非阻塞式指的是它能用看起来阻塞的代码写出非阻塞的操作
+ *      suspend标记这个方法是耗时的，需要在协程里调用
+ *
+ *      CoroutineDispatcher 协程运行的线程调度器，有 4种线程模式：
+ *          Dispatchers.Default
+ *          Dispatchers.IO -
+ *          Dispatchers.Main - 主线程
+ *          Dispatchers.Unconfined - 没指定，就是在当前线程
+ *
+ *      Job - 协程构建函数的返回值，可以把 Job 看成协程对象本身
+ *          job.start() - 启动协程，除了 lazy 模式，协程都不需要手动启动
+ *          job.join() - 等待协程执行完毕
+ *          job.cancel() - 取消一个协程
+ *          job.cancelAndJoin() - 等待协程执行完毕然后再取消
+ *
+ *      async 返回的是 Deferred 类型，Deferred 继承自 Job 接口，Job有的它都有，增加了一个方法 await ，
+ *      这个方法接收的是 async 闭包中返回的值，async 的特点是不会阻塞当前线程，但会阻塞所在协程，也就是挂起
+ *      launch 更多是用来发起一个无需结果的耗时任务，这个工作不需要返回结果。
+ *      async 函数则是更进一步，用于异步执行耗时任务，并且需要返回值（如网络请求、数据库读写、文件读写），
+ *             在执行完毕通过 await() 函数获取返回值
+ *
+ * 作者：不思进取的码农
+ * 链接：https://www.jianshu.com/p/1dc67a300b6b
+ * 来源：简书
+ * 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
  * 8.协程怎么取消
  * 9.说说MVP与MVVM的区别
  *
@@ -208,6 +241,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 
  * 4.Handler机制了解吗？一个线程有几个Looper？为什么？
  * 5.你了解协程吗？协程有什么作用？可以完全取代rxjava吗？
+ *      挂起函数在执行完成之后，协程会重新切回它原先的线程
+ *      协程的好处：a。节省cpu，避免系统内核级的线程频繁切换，造成cpu资源浪费，而协程是用户态的线程，用户可以自行控制协程的创建/销毁，
+ *                  极大程度避免了系统级线程上下文切换造成的资源浪费
+ *                b。节约内存，在 64 位的 Linux 中，一个线程需要分配 8MB 栈内存和 64MB 堆内存，而协程只需要几十KB
+ *                c。稳定性，线程间通过内存来共享数据，这样任何一个线程出错时，所有线程都会崩溃
+ *                d。开发效率，协程可以将一些耗时的IO操作异步化。
+ *
  * 6.你们用的什么消息通信机制
  * 7.你的项目有什么难点？介绍一下？
  * 8.算法题，二叉树最长结点集合
@@ -217,6 +257,11 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 2.说说Java的内存分区
  * 3.讲讲你对垃圾回收机制的了解，老年代有什么算法？
  * 4.说说你对volatile字段有什么用途？
+ *      保证可见性和有序性
+ *      volatile实现原理？
+ *          a。变量的内存可见性是基于内存屏障实现的（LoadLoad,LoadStore,StoreLoad,StoreStore）
+ *          b。synchronized靠操作系统内核互斥锁实现的，相当于jvm中的lock和unlock，退出代码块时一定会刷新变量到主内存
+ *          c。volatile靠插入内存屏障指令后面指令跑到前边去的
  * 5.说说事件分发机制，怎么写一个不能滑动的ViewPager
  * 6.说说你对类加载机制的了解？DexClassLoader与PathClassLoader的区别
  * 7.说说插件化的原理，资源的插件化id重复如何解决？
@@ -261,7 +306,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  *      a，synchronized修饰在非静态方法上和synchronized(this){} 同步代码块效果是一样的
  *      b，synchronized修饰在静态方法上和 synchronized (SyncTest1.class) {} 同步代码块效果是一样的
  *      c，synchronized修饰在非静态方法表示锁的是当前对象，修饰静态方法表示锁的是类对象(一个类在jvm中只有一个class对象)
- *      d. 另外：volatitle 只能保证可见性和有序性，但不能保证原子性；synchronized/Locked接口/Atomic类型保证原子性
+ *      d. 另外：volatitle 只能保证可见性和有序性，但不能保证原子性；synchronized/Locked接口/Atomic类型保证原子性和可见性
  *
  * 14.源码中有哪里用到了AtomicInt
  * 15.AQS了解吗？
@@ -396,6 +441,13 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 3.WebView性能优化做过什么工作？
  * 4.AIDL in out oneWay代表什么意思？
  * 5.线程池了解多少？拒绝策略有几种,为什么有newSingleThread
+ *      Android中单线程可用于数据库操作，文件操作，应用批量安装，应用批量删除等不适合并发但可能IO阻塞性的操作
+ *       1、缓存线程、进行池化，可实现线程重复利用、避免重复创建和销毁所带来的性能开销。
+ *       2、当线程调度任务出现异常时，会重新创建一个线程替代掉发生异常的线程。
+ *       3、任务执行按照规定的调度规则执行。线程池通过队列形式来接收任务。再通过空闲线程来逐一取出进行任务调度。即线程池可以控制任务调度的执行顺序。
+ *       4、可制定拒绝策略。即任务队列已满时，后来任务的拒绝处理规则。
+ *       这些对于singleThreadExecutor来说也是适用的。普通线程和线程池中创建的线程其最大的区别就是有无一个管理者对线程进行管理。
+ *
  * 6.跨进程通信了解多少？管道了解吗？
  * 7.协程介绍一下，讲一个协程的scope与context，协程的+号代表什么
  * 8.Handler休眠是怎样的？epoll的原理是什么？如何实现延时消息，如果移除一个延时消息会解除休眠吗？
@@ -469,5 +521,11 @@ public class Doc {
         double j = i;
         System.out.println(">>> " + (i > j || i <= j));
 //        ThreadPoolExecutor
+
+        List<Integer> primes = Arrays.asList(new Integer[]{2, 3,5,7});
+        int factor = 2;
+        //lambda表达式有个限制，那就是只能引用 final 或 final 局部变量，这就是说不能在lambda内部修改定义在域外的变量
+//        primes.forEach(element -> { System.out.println(factor++);});
+
     }
 }

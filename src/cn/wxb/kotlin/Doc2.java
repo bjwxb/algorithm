@@ -308,6 +308,13 @@ package cn.wxb.kotlin;
  * SystemServer，ServiceManager，SystemServiceManager的关系
  * 孵化应用进程这种事为什么不交给SystemServer来做，而专门设计一个Zygote
  * Zygote的IPC通信机制为什么使用socket而不采用binder
+ *      1。zygote比serverManager先启动，这样就没有server manager可以注册，因此就不能使用bindr
+ *      2。init进程是所有linux的起点，是zygote的父进程；
+ *          zygote是所有java进程 父进程，所有的app进程都由zygote fork而来
+ *          SystemServer是zygote孵化出的第一个进程，其负责启动和管理整个java framework
+ * 为什么是Zygote来孵化进程，而不是新建进程呢？
+ *      每个应用程序都是运行在各自的Dalvik虚拟机中，应用程序每次运行都要重新初始化和启动虚拟机，这个过程会耗费很长时间。
+ *      Zygote会把已经运行的虚拟机的代码和内存信息共享，起到一个预加载资源和类的作用，从而缩短启动时间
  * 21.App启动&打包&安装
  * 应用启动流程
  * apk组成和Android的打包流程

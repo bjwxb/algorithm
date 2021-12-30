@@ -21,7 +21,7 @@ public class ThreadPoolTest {
 
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
                 2,  //核心线程数
-                55, //线程池中最大的线程数
+                13, //线程池中最大的线程数
                 60,  //线程的存活时间，没事干的时候，空闲的时间
                 TimeUnit.SECONDS, //线程存活时间的单位
                 new LinkedBlockingQueue<>(6), //线程缓存队列
